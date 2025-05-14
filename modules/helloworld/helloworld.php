@@ -14,12 +14,12 @@ class HelloWorld extends Module
         // Basisinformatie over de module instellen
         $this->name = 'helloworld'; // let op: gebruik alleen kleine letters
         $this->tab = 'administration';
-        $this->version = '1.0.75';
+        $this->version = '1.0.76';
         $this->author = 'Frits van Leeuwen';
         $this->bootstrap = true;
 
         parent::__construct();
-        // Haal de vertalingen op in een aparte functie
+        // Haal de vertalingen op in een aparte functie+
         $this->loadTranslations();
     }
 
