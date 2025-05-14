@@ -14,7 +14,7 @@ class HelloWorld extends Module
         // Basisinformatie over de module instellen
         $this->name = 'helloworld'; // let op: gebruik alleen kleine letters
         $this->tab = 'administration';
-        $this->version = '1.0.74';
+        $this->version = '1.0.75';
         $this->author = 'Frits van Leeuwen';
         $this->bootstrap = true;
 
