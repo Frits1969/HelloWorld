@@ -17,7 +17,7 @@ class HelloWorld extends Module
         // Basisinformatie over de module instellen
         $this->name = 'helloworld'; // let op: gebruik alleen kleine letters voor de mapnaam!
         $this->tab = 'administration';
-        $this->version = '1.0.87';
+        $this->version = '1.0.91';
         $this->author = 'Frits van Leeuwen';
         $this->bootstrap = true;
 
@@ -28,35 +28,50 @@ class HelloWorld extends Module
 
     private function loadTranslations()
     {
-        $translator = Context::getContext()->getTranslator();
+        $context = Context::getContext();
+        $translator = $context->getTranslator();
         $domain = self::TRANSLATION_DOMAIN;
-
-        // Haal de vertaling voor de module-naam op (key: 'Hello World')
+        
+        // Bepaal de actieve taal (id)
+        $currentLanguageId = (int)$context->language->id;
+        
+        // Indien je meerdere thema’s hebt, kun je ook het huidige thema filteren.
+        $themeColumnResult = Db::getInstance()->executeS("SHOW COLUMNS FROM " . _DB_PREFIX_ . "translation LIKE 'theme'");
+        $themeColumnExists = !empty($themeColumnResult);
+        $currentTheme = (Configuration::get('PS_THEME')) ? Configuration::get('PS_THEME') : 'classic';
+        $whereTheme = $themeColumnExists ? "AND theme = '" . pSQL($currentTheme) . "'" : "";
+        
+        // Haal de vertaling voor 'Hello World' op, ook filteren op id_lang
         $forcedTranslation = Db::getInstance()->getValue("
             SELECT translation FROM " . _DB_PREFIX_ . "translation
             WHERE domain = '" . pSQL($domain) . "' AND `key` = 'Hello World'
             LIMIT 1
         ");
 
+        
         if (!empty($forcedTranslation)) {
             $this->displayName = $forcedTranslation;
         } else {
             $this->displayName = $translator->trans('Hello World', [], $domain);
         }
-
-        // Zelfde methode voor de beschrijving (key: 'A simple module to test translations.')
+        
+        // Zelfde filtering toepassen voor de beschrijving
         $forcedDescription = Db::getInstance()->getValue("
             SELECT translation FROM " . _DB_PREFIX_ . "translation
-            WHERE domain = '" . pSQL($domain) . "' AND `key` = 'A simple module to test translations.'
+            WHERE domain = '" . pSQL($domain) . "'
+            AND `key` = 'A simple module to test translations.'
+            AND id_lang = " . $currentLanguageId . "
+            $whereTheme
             LIMIT 1
         ");
-
+        
         if (!empty($forcedDescription)) {
             $this->description = $forcedDescription;
         } else {
             $this->description = $translator->trans('A simple module to test translations.', [], $domain);
         }
     }
+
 
     public function install()
     {
@@ -101,11 +116,6 @@ class HelloWorld extends Module
                 $translationFile = $translationsFolder . $iso_code . '.php';
                 
                 if (file_exists($translationFile)) {
-                    // Het bestand moet een PHP-array retourneren met de vertalingen:
-                    // return [
-                    //     'Hello World' => 'Hallo Wereld',
-                    //     'A simple module to test translations.' => 'Een eenvoudige module om vertalingen te testen.'
-                    // ];
                     $translations = include $translationFile;
                     
                     if (is_array($translations)) {
@@ -213,8 +223,8 @@ class HelloWorld extends Module
         }
 
         // Haal vertalingen op basis van de gekozen taal
-        $translatedName = $translator->trans('Hello World', [], $domain);
-        $translatedDescription = $translator->trans('A simple module to test translations.', [], $domain);
+//        $translatedName = $translator->trans('Hello World', [], $domain);
+//        $translatedDescription = $translator->trans('A simple module to test translations.', [], $domain);
 
         // Bouw de taalkeuzelijst dynamisch op uit de database
         $languageOptions = '';
@@ -224,20 +234,20 @@ class HelloWorld extends Module
                                 '>' . $lang['name'] . '</option>';
         }
 
-        return '
-            <div class="panel">
+        return "
+            <div class=\"panel\">
                 <h2>Configuratiepagina voor HelloWorld</h2>
-                <form method="POST">
-                    <label for="module_lang">Kies een taal:</label>
-                    <select name="module_lang" id="module_lang" onchange="this.form.submit()">
-                        ' . $languageOptions . '
+                <form method=\"POST\">
+                    <label for=\"module_lang\">Kies een taal:</label>
+                    <select name=\"module_lang\" id=\"module_lang\" onchange=\"this.form.submit()\">
+                        $languageOptions
                     </select>
                 </form>
                 <hr />
-                <p><strong>Geselecteerde taal:</strong> ' . strtoupper($selectedLang) . '</p>
-                <p><strong>Module naam:</strong> ' . $translatedName . '</p>
-                <p><strong>Beschrijving:</strong> ' . $translatedDescription . '</p>
+                <p><strong>Module naam:</strong> " . $translator->trans('Hello World', [], $domain) . "</p>
+                <p><strong>Beschrijving:</strong> " . $translator->trans('A simple module to test translations.', [], $domain) . "</p>
             </div>
-        ';
+        ";
+
     }
 }
